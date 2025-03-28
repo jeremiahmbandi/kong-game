@@ -368,6 +368,14 @@
 
         function hideKongOverlay(){
             document.getElementById('kong_overlay').style.display = "none";
+            // Background music
+            const backgroundMusic = new Audio();
+            backgroundMusic.src = "gameaudio.mp3";
+            backgroundMusic.loop = true;
+            backgroundMusic.volume = 0.5;
+
+            // Try to play background music (will be blocked by browsers until user interaction)
+            backgroundMusic.play().catch(e => console.log("Audio play failed:", e));
         }
     </script>
 </div>
@@ -607,15 +615,6 @@
     const winSound = new Audio();
     winSound.src = 'win.mp3';
     winSound.preload = 'auto';
-
-    // Background music
-    const backgroundMusic = new Audio();
-    backgroundMusic.src = "gameaudio.mp4";
-    backgroundMusic.loop = true;
-    backgroundMusic.volume = 0.5;
-
-    // Try to play background music (will be blocked by browsers until user interaction)
-    backgroundMusic.play().catch(e => console.log("Audio play failed:", e));
 
     // Calculate reel dimensions based on available space
     function calculateReelDimensions() {
