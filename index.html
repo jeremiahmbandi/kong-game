@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mobile Slot Machine</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Andada+Pro:ital,wght@0,400..840;1,400..840&family=Chakra+Petch:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Noto+Serif:ital,wght@0,100..900;1,100..900&family=Victor+Mono:ital,wght@0,100..700;1,100..700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #2c2c2c;
+            touch-action: manipulation;
+        }
+        #game-container {
+            width: 100%;
+            height: 100vh;
+            max-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .game-canvas-container {
+            background-image: url('bcg.jpg');
+            flex: 1;
+            position: relative;
+            max-height: 35vh;
+            overflow: hidden;
+        }
+        .game-controls {
+            padding: 0px !important;
+            width: 100%;
+            background-image: url('wood.jpg');
+            border-radius: 12px 12px 0 0;
+            z-index: 1000;
+            bottom: 0 !important;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .spin-button, .autoplay-button {
+            cursor: pointer;
+            width: 100%;
+            text-align: center;
+            padding: 12px;
+        }
+        /* Responsive adjustments */
+        @media (max-height: 600px) {
+            .game-controls {
+                padding: 5px;
+            }
+            .control-group {
+                gap: 5px;
+            }
+            .input-group {
+                margin-bottom: 5px;
+            }
+        }
+        /* Prevent text selection */
+        * {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+        /* Allow input in number fields */
+        input[type="number"] {
+            -webkit-user-select: auto;
+            -moz-user-select: auto;
+            -ms-user-select: auto;
+            user-select: auto;
+        }
+        /* Stake button and overlay styles */
+        .stake-button {
+            background-color: #212529;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 100px;
+        }
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 1);
+            z-index: 2000;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .overlay-content {
+            border-radius: 12px;
+            width: 90%;
+            max-width: 400px;
+            padding: 20px;
+            margin-top: 100px;
+        }
+        .overlay-header {
+            color: #e4d594;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        .option-button {
+            background: linear-gradient(to bottom, #353333, #272525);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 15px 0;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .option-button:hover, .option-button.selected {
+            background-color: #25282b;
+            box-shadow: 
+                inset 0 0 0 2px rgba(0, 0, 0, 0.15),
+                0 0 0 2px rgba(0, 0, 0, 0.15),
+                inset 0 0 0.875rem #FCEAAC,
+                0 0 0.875rem #FCEAAC;
+        }
+        .overlay-footer {
+            width: 80%;
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            padding-bottom: 50px;
+            position: fixed;
+            bottom: 0;
+        }
+        .overlay-footer button {
+            padding: 8px 16px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+        }
+        .cancel-button {
+            background-color: #333;
+            color: white;
+        }
+        .confirm-button {
+            background-color: #333;
+            box-shadow: 0 0 4px #e4d594;
+            color: white;
+        }
+        .divider-container {
+            color: #e4d594;
+        }
+        .divider {
+            height: 2px;
+            background-color: #e4d594;
+            width: 30vw;
+        }
+        .divider-text {
+            margin: 0 10px;
+        }
+        .divider-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            margin: 16px 0;
+        }
+        .check-icon {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            margin-left: 4px;
+            position: relative;
+        }
+        .check-icon:before {
+            content: '';
+            position: absolute;
+            width: 8px;
+            height: 12px;
+            border-right: 2px solid white;
+            border-bottom: 2px solid white;
+            transform: rotate(45deg);
+            top: 0;
+            left: 4px;
+        }
+        
+        .victor-mono {
+            font-family: "Victor Mono", monospace;
+            font-optical-sizing: auto;
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        /* Settings overlay styles */
+        .sound-option {
+            background: linear-gradient(to bottom, #353333, #272525);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 15px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 15px 0px;
+        }
+        .sound-option.selected {
+            box-shadow: 
+                inset 0 0 0 2px rgba(0, 0, 0, 0.15),
+                0 0 0 2px rgba(0, 0, 0, 0.15),
+                inset 0 0 0.875rem #FCEAAC,
+                0 0 0.875rem #FCEAAC;
+        }
+        .icon-container {
+            font-size: 1.5rem;
+            display: inline-block;
+            width: 30px;
+            text-align: center;
+        }
+        .loader-container {
+            height: 10px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+        }
+        .loader-bar {
+            height: 100%;
+            width: 0;
+            background: orange;
+            transition: width 0.3s ease;
+        }
+        .glowing-button {
+            position: absolute; /* Ensure ::after is positioned relative to this */
+            bottom: 14%;
+            padding: 6px 50px;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            border-radius: 12px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #c09c0e;
+            background-color: #fada60;
+            font-weight: bold;
+            text-shadow: 
+                -1px -1px 0 orange,  
+                1px -1px 0 orange,
+                -1px  1px 0 orange,
+                1px  1px 0 orange;
+            overflow: hidden; /* Prevents the light effect from overflowing */
+        }
+
+        /* Light reflection effect */
+        .glowing-button::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 200%; /* Reduce width to prevent excessive overflow */
+            height: 100%;
+            background: linear-gradient(
+                100deg,
+                rgba(255, 255, 255, 0) 40%,
+                rgba(255, 255, 255, 0.4) 50%,
+                rgba(255, 255, 255, 0) 60%
+            );
+            animation: light-sweep 2s infinite linear;
+        }
+
+        @keyframes light-sweep {
+            0% {
+                left: -100%;
+            }
+            100% {
+                left: 100%;
+            }
+        }
+
+
+
+        
+    </style>
+</head>
+    <div id="jdb_overlay" style="height: 100vh;width: 100vw;padding: 0 !important;margin: 0 !important;background-color: black;position: absolute;z-index: 3000;display: none;">
+        <div style="height: 100%;width: 100%;" class="d-flex justify-content-center align-items-center">
+            <div class="row">
+                <div class="col-7 col-lg-4 d-flex justify-content-center align-items-center mx-auto">
+                    <div>
+                        <img src="jdb_logo.png" alt="mx-auto">
+                        <div class="d-flex justify-content-center mx-auto">
+                            <div class="loader-container" style="width: 50%;border-style: solid;border-width: 1px;">
+                                <div class="loader-bar" id="loader-bar"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="kong_overlay" style="height: 100vh;width: 100vw;padding: 0 !important;margin: 0 !important;background-color: black;position: absolute;z-index: 2900;background-image: url('kong_bcg.png');">
+        <div class="d-flex justify-content-center">
+            <button class="glowing-button text-white" onclick="hideKongOverlay()">START</button>
+        </div>
+    </div>
+    
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            let loaderBar = document.getElementById("loader-bar");
+            let progress = 0;
+            
+            function updateProgress() {
+                progress += Math.random() * 10;
+                if (progress < 100) {
+                    loaderBar.style.width = progress + "%";
+                    setTimeout(updateProgress, 200);
+                } else {
+                    loaderBar.style.width = "100%";
+                    setTimeout(() => document.querySelector(".loader-container").style.display = "none", 500);
+                    document.getElementById('jdb_overlay').style.display = "none";
+                }
+            }
+            
+            updateProgress();
+
+            
+        });
+
+        function hideKongOverlay(){
+            document.getElementById('kong_overlay').style.display = "none";
+        }
+    </script>
+</div>
+<body class="victor-mono">
+    <div id="game-container">
+        <div>
+            <img src="bg-top.png" style="width: 100%;height: auto;" alt="">
+        </div>
+        <div class="game-canvas-container" style="height: ;"></div>
+
+        <!-- Controls -->
+        <div class="game-controls p-2">
+            <div class="w-100 text-center text-white d-flex justify-content-center align-items-center" style="background-image: url('results-bcg2.png');background-size: cover;height: 25px;font-size: 1.3rem;font-weight: 600;">
+                <div>
+                    WIN <span class="px-1" id="update_winnings">0.00</span>
+                </div>
+            </div>
+            <div style="display: flex; justify-content: center; align-items: center; padding-top: 8px;">
+                <button id="autoPlayButton" class="rounded-circle" style="width: 80px; height: 80px;background-image: url('autoplay-image.png');background-size: cover;">
+                </button>
+                <button id="spinButton" class="rounded-circle mx-4" style="width: 100px; height: 100px;background-image: url('spin.png');background-size: cover;"></button>
+                
+                <!-- Stake button that opens the overlay -->
+                <button id="stakeButton" class="rounded-circle text-center d-flex justify-content-center align-items-center" style="width: 80px; height: 80px;background-image: url('stake.png');background-size: cover;color: orange;font-size: 0.9rem;line-height: 1;font-weight: 900;">
+                    <span>
+                        <span>TOTAL BET</span> <br><span id="currentStake">10</span>
+                    </span>
+                </button>
+            </div>
+            <div class="container mb-2">
+                <div style="display: flex; width: 100%; position: relative; align-items: center;">
+                    <!-- Button at the start (left) -->
+                    <button id="settingsButton" class="rounded-circle" style="width: 50px; height: 50px;background-image: url('settings.png');background-size: cover;">
+                    </button>
+            
+                    <!-- Button at the center -->
+                    <div style="position: absolute; left: 50%; transform: translateX(-50%); text-align: center;">
+                        <span class="text-center">
+                            <span class="badge px-4 py-2 text-white" style="background-color: rgba(0,0,0,0.7);">CREDIT: <span id="balanceText">1000</span></span>
+                            <br>
+                            <span class="text-white text-center" style="font-size: 0.8rem;">
+                                &lt; <span>DEMO GAME</span> &gt;
+                            </span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stake Selection Overlay -->
+    <div id="stakeOverlay" class="overlay">
+        <div class="divider-container">
+            <div class="divider-wrapper">
+                <div class="divider"></div>
+                <div class="divider-text">TOTAL BET</div>
+                <div class="divider"></div>
+            </div>
+        </div>
+        <div class="overlay-content mx-auto">
+            <div class="overlay-header">FUN</div>
+            <div class="options-grid" id="stakeOptions">
+                <button class="option-button" data-value="5">5</button>
+                <button class="option-button" data-value="10">10</button>
+                <button class="option-button" data-value="20">20</button>
+                <button class="option-button" data-value="50">50</button>
+                <button class="option-button" data-value="100">100</button>
+                <button class="option-button" data-value="200">200</button>
+            </div>
+            <div class="overlay-footer">
+                <button class="cancel-button px-4" id="cancelStake">Cancel</button>
+                <button class="confirm-button px-5" id="confirmStake">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auto Spin Overlay -->
+    <div id="autoSpinOverlay" class="overlay">
+        <div class="divider-container">
+            <div class="divider-wrapper">
+                <div class="divider"></div>
+                <div class="divider-text">AUTO SPINS</div>
+                <div class="divider"></div>
+            </div>
+        </div>
+        <div class="overlay-content mx-auto">
+            <div class="overlay-header">SELECT SPINS</div>
+            <div class="options-grid" id="autoSpinOptions">
+                <button class="option-button" data-value="5">5</button>
+                <button class="option-button" data-value="10">10</button>
+                <button class="option-button" data-value="25">25</button>
+                <button class="option-button" data-value="50">50</button>
+                <button class="option-button" data-value="100">100</button>
+                <button class="option-button" data-value="200">200</button>
+            </div>
+            <div class="overlay-footer">
+                <button class="cancel-button px-4" id="cancelAutoSpin">Cancel</button>
+                <button class="confirm-button px-5" id="confirmAutoSpin">Start</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Overlay -->
+    <div id="settingsOverlay" class="overlay">
+        <div class="divider-container">
+            <div class="divider-wrapper">
+                <div class="divider"></div>
+                <div class="divider-text">SETTINGS</div>
+                <div class="divider"></div>
+            </div>
+        </div>
+        <div class="overlay-content mx-auto">
+            <div class="overlay-header">SOUND OPTIONS</div>
+            <div>
+                <!-- Sound Effects Option -->
+                <div class="d-flex justify-content-center">
+                    <div id="soundEffectsOption" class="sound-option selected mx-auto col-10">
+                        <div>Sound Effects</div>
+                        <div>
+                            <span id="soundEffectsIcon" class="icon-container">🔊</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-center">
+                    <!-- Background Music Option -->
+                    <div id="backgroundMusicOption" class="sound-option selected mx-auto col-10">
+                        <div>Background Music</div>
+                        <div>
+                            <span id="backgroundMusicIcon" class="icon-container">🔊</span>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+            <div class="overlay-footer">
+                <button class="cancel-button px-4" id="cancelSettings">Cancel</button>
+                <button class="confirm-button px-5" id="confirmSettings">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.4.0/pixi.min.js"></script>
+    <script>
+    // Mobile-optimized game configuration
+    const gameContainer = document.querySelector('.game-canvas-container');
+    const app = new PIXI.Application({
+        width: gameContainer.clientWidth,
+        height: gameContainer.clientHeight,
+        autoDensity: true,
+        resolution: window.devicePixelRatio || 1
+    });
+    gameContainer.appendChild(app.view);
+
+    // Load the background image
+    const backgroundTexture = PIXI.Texture.from('bcg.jpg');
+    const backgroundSprite = new PIXI.Sprite(backgroundTexture);
+
+    // Function to resize the background
+    function resizeBackground() {
+        backgroundSprite.width = app.screen.width;
+        backgroundSprite.height = app.screen.height;
+    }
+
+    // Ensure the background resizes properly
+    resizeBackground();
+    app.stage.addChild(backgroundSprite);
+
+    // Handle window resizing
+    window.addEventListener('resize', () => {
+        app.renderer.resize(gameContainer.clientWidth, gameContainer.clientHeight);
+        resizeBackground();
+    });
+
+    // Game variables
+    const symbols = [
+        { name: 'icon-1', image: 'icon-001.png', multiplier: 2 },
+        { name: 'icon-2', image: 'icon-002.png', multiplier: 5 },
+        { name: 'icon-3', image: 'icon-003.png', multiplier: 5 },
+        { name: 'icon-4', image: 'icon-004.png', multiplier: 5 },
+        { name: 'icon-5', image: 'icon-005.png', multiplier: 5 },
+        { name: 'icon-6', image: 'icon-006.png', multiplier: 5 }
+    ];
+    const symbolMultiplierMap = new Map(symbols.map(s => [s.name, s.multiplier]));
+
+    // Preload reel background image
+    const reelBackgroundTexture = PIXI.Texture.from('reel-bg.jpg');
+
+    const reels = [];
+    const reelSymbols = []; // Array to track symbols separately from reel containers
+    const numReels = 5;
+    const numRows = 3;
+    let spinning = false;
+    let balance = 1000;
+    let stake = 10;
+    let autoSpins = 0;
+    let currentInterval;
+    let selectedStake = 10; // Default stake value
+    let selectedAutoSpins = 0; // Default auto spins value
+
+    // Sound control variables
+    let soundEffectsEnabled = true;
+    let backgroundMusicEnabled = true;
+    let tempSoundEffectsEnabled = true;
+    let tempBackgroundMusicEnabled = true;
+
+    // Display elements
+    const balanceText = document.getElementById('balanceText');
+    const currentStakeElement = document.getElementById('currentStake');
+    const spinButton = document.getElementById('spinButton');
+    const autoPlayButton = document.getElementById('autoPlayButton');
+    const stakeButton = document.getElementById('stakeButton');
+    const stakeOverlay = document.getElementById('stakeOverlay');
+    const autoSpinOverlay = document.getElementById('autoSpinOverlay');
+    const stakeOptions = document.getElementById('stakeOptions');
+    const autoSpinOptions = document.getElementById('autoSpinOptions');
+    const cancelStakeButton = document.getElementById('cancelStake');
+    const confirmStakeButton = document.getElementById('confirmStake');
+    const cancelAutoSpinButton = document.getElementById('cancelAutoSpin');
+    const confirmAutoSpinButton = document.getElementById('confirmAutoSpin');
+
+    // Settings elements
+    const settingsButton = document.getElementById('settingsButton');
+    const settingsOverlay = document.getElementById('settingsOverlay');
+    const soundEffectsOption = document.getElementById('soundEffectsOption');
+    const backgroundMusicOption = document.getElementById('backgroundMusicOption');
+    const soundEffectsIcon = document.getElementById('soundEffectsIcon');
+    const backgroundMusicIcon = document.getElementById('backgroundMusicIcon');
+    const cancelSettingsButton = document.getElementById('cancelSettings');
+    const confirmSettingsButton = document.getElementById('confirmSettings');
+
+    // Sound effects
+    const spinSound = new Audio();
+    spinSound.src = 'spin.mp3';
+    spinSound.preload = 'auto';
+    
+    const winSound = new Audio();
+    winSound.src = 'win.mp3';
+    winSound.preload = 'auto';
+
+    // Background music
+    const backgroundMusic = new Audio();
+    backgroundMusic.src = "gameaudio.mp3";
+    backgroundMusic.loop = true;
+    backgroundMusic.volume = 0.5;
+
+    // Try to play background music (will be blocked by browsers until user interaction)
+    backgroundMusic.play().catch(e => console.log("Audio play failed:", e));
+
+    // Calculate reel dimensions based on available space
+    function calculateReelDimensions() {
+        const availableWidth = app.screen.width;
+        const availableHeight = app.screen.height;
+        
+        const reelWidth = availableWidth / numReels * 0.90;
+        const reelHeight = availableHeight * 0.99;
+        
+        return { reelWidth, reelHeight };
+    }
+
+    // Create reels
+    function createReels() {
+        // Clear existing reels
+        reels.forEach(reel => {
+            app.stage.removeChild(reel);
+        });
+        reels.length = 0;
+        reelSymbols.length = 0;
+        
+        const { reelWidth, reelHeight } = calculateReelDimensions();
+        
+        // Create new reels
+        for (let i = 0; i < numReels; i++) {
+            // Create reel container
+            const reel = new PIXI.Container();
+            reel.x = (app.screen.width / numReels) * i + (app.screen.width / numReels - reelWidth) / 2;
+            reel.y = (app.screen.height - reelHeight) / 2;
+            
+            // Add background image to each reel
+            const reelBackground = new PIXI.Sprite(reelBackgroundTexture);
+            reelBackground.width = reelWidth;
+            reelBackground.height = reelHeight;
+            reelBackground.alpha = 0.8; // Adjust transparency as needed
+            reel.addChild(reelBackground);
+            
+            // Create symbol container
+            const symbolContainer = new PIXI.Container();
+            reel.addChild(symbolContainer);
+            
+            reels.push(reel);
+            reelSymbols.push(symbolContainer);
+            app.stage.addChild(reel);
+        }
+        
+        // Populate reels
+        populateReels();
+    }
+
+    // Populate all reels with symbols
+    function populateReels() {
+        for (let i = 0; i < numReels; i++) {
+            populateReel(i);
+        }
+    }
+
+    // Populate a single reel with symbols
+    function populateReel(reelIndex) {
+        const symbolContainer = reelSymbols[reelIndex];
+        symbolContainer.removeChildren();
+        
+        const { reelWidth, reelHeight } = calculateReelDimensions();
+        
+        const rowSymbols = [];
+        for (let j = 0; j < numRows; j++) {
+            const symbol = symbols[Math.floor(Math.random() * symbols.length)];
+            const texture = PIXI.Texture.from(symbol.image);
+            const sprite = new PIXI.Sprite(texture);
+            sprite.y = j * (reelHeight / numRows);
+            sprite.x = reelWidth * 0.02; // Add a small margin
+            sprite.width = reelWidth * 0.96;
+            sprite.height = (reelHeight / numRows) * 1;
+            sprite.symbolName = symbol.name;
+            symbolContainer.addChild(sprite);
+            rowSymbols.push(sprite);
+        }
+        
+        return rowSymbols;
+    }
+
+    // Spin animation with sequential stopping
+    function spinAnimation(callback) {
+        if (currentInterval) clearInterval(currentInterval);
+        
+        const spinCounts = [15, 20, 25, 30, 35]; // Different stop times for each reel
+        const remainingSpins = [...spinCounts];
+        
+        currentInterval = setInterval(() => {
+            let allStopped = true;
+            
+            for (let i = 0; i < numReels; i++) {
+                if (remainingSpins[i] > 0) {
+                    populateReel(i);
+                    remainingSpins[i]--;
+                    allStopped = false;
+                }
+            }
+            
+            if (allStopped) {
+                clearInterval(currentInterval);
+                spinning = false;
+                currentInterval = null;
+                callback();
+            }
+        }, 100);
+    }
+
+    // Function to play spin sound
+    function playSpinSound() {
+        if (soundEffectsEnabled && spinSound) {
+            spinSound.play().catch(e => console.log("Audio play failed:", e));
+        }
+    }
+
+    // Function to play win sound
+    function playWinSound() {
+        if (soundEffectsEnabled && winSound) {
+            winSound.play().catch(e => console.log("Audio play failed:", e));
+        }
+    }
+
+    // Spin function
+    function spin() {
+        if (spinning || balance <= 0) return;
+        
+        if (stake <= 0 || stake > balance) {
+            alert("Invalid stake amount!");
+            return;
+        }
+        
+        balance -= stake;
+        balanceText.textContent = balance;
+        
+        // Play spin sound if enabled
+        playSpinSound();
+        
+        spinning = true;
+        spinAnimation(() => {
+            checkWin();
+            autoSpins--;
+            if (autoSpins > 0 && balance >= stake) {
+                setTimeout(spin, 500);
+            } else {
+                autoSpins = 0;
+            }
+            spinning = false;
+        });
+    }
+
+    function updateWinnings(targetAmount) {
+        let element = document.getElementById('update_winnings');
+        let currentAmount = parseFloat(element.innerHTML) || 0;
+        let increment = (targetAmount - currentAmount) / 50; // Adjust speed
+
+        let counter = setInterval(() => {
+            currentAmount += increment;
+            element.innerHTML = `${currentAmount.toFixed(2)}`;
+
+            if ((increment > 0 && currentAmount >= targetAmount) || (increment < 0 && currentAmount <= targetAmount)) {
+                element.innerHTML = `${targetAmount.toFixed(2)}`;
+                clearInterval(counter);
+            }
+        }, 20); // Update every 20ms
+    }
+
+    // IMPROVED WINNING LOGIC
+    function checkWin() {
+        // Get all rows of symbols
+        const firstRowSymbols = [];
+        const secondRowSymbols = [];
+        const thirdRowSymbols = [];
+        
+        // Extract symbols from each reel for each row
+        reelSymbols.forEach(container => {
+            if (container.children.length >= 3) {
+                firstRowSymbols.push(container.children[0].symbolName);
+                secondRowSymbols.push(container.children[1].symbolName);
+                thirdRowSymbols.push(container.children[2].symbolName);
+            }
+        });
+        
+        let totalWinnings = 0;
+        
+        // Check each row for winning combinations
+        totalWinnings += checkRowForWin(firstRowSymbols, 0);
+        totalWinnings += checkRowForWin(secondRowSymbols, 1);
+        totalWinnings += checkRowForWin(thirdRowSymbols, 2);
+        
+        if (totalWinnings > 0) {
+            balance += totalWinnings;
+            balanceText.textContent = balance;
+            showWinMessage(totalWinnings);
+            
+            // Play win sound if enabled
+            playWinSound();
+        }
+        else{
+            document.getElementById('update_winnings').innerHTML = '0.00'
+        }
+    }
+
+    // Helper function to check a single row for wins
+    function checkRowForWin(rowSymbols, rowIndex) {
+        // Count occurrences of each symbol
+        const symbolCounts = {};
+        rowSymbols.forEach(symbol => {
+            if (symbol) {
+                symbolCounts[symbol] = (symbolCounts[symbol] || 0) + 1;
+            }
+        });
+        
+        let rowWinnings = 0;
+        
+        // Check for winning combinations (3 or more of the same symbol)
+        Object.entries(symbolCounts).forEach(([symbol, count]) => {
+            if (count >= 3) {
+                // Calculate winnings based on the number of matching symbols
+                // More matching symbols = higher multiplier
+                const multiplier = symbolMultiplierMap.get(symbol) * (count - 2); // Increase multiplier for more matches
+                const win = stake * multiplier;
+                rowWinnings += win;
+                
+                // Highlight winning symbols
+                highlightWinningSymbols(rowIndex, symbol, count);
+            }
+        });
+        
+        return rowWinnings;
+    }
+
+    // Function to highlight winning symbols
+    function highlightWinningSymbols(rowIndex, symbolName, count) {
+        // Find all positions of the winning symbol in the row
+        const positions = [];
+        reelSymbols.forEach((container, reelIndex) => {
+            if (container.children[rowIndex]?.symbolName === symbolName) {
+                positions.push(reelIndex);
+            }
+        });
+        
+        // Highlight only the symbols that are part of the winning combination
+        // (in case there are more than 'count' of them)
+        positions.slice(0, count).forEach(reelIndex => {
+            const symbolSprite = reelSymbols[reelIndex].children[rowIndex];
+            if (symbolSprite) {
+                // Create a highlight effect
+                const originalScale = symbolSprite.scale.x || 1;
+                
+                // Animation to highlight the winning symbol
+                let highlightTween = {
+                    scale: originalScale,
+                    increasing: true
+                };
+                
+                const highlightInterval = setInterval(() => {
+                    if (highlightTween.increasing) {
+                        highlightTween.scale += 0.01;
+                        if (highlightTween.scale >= originalScale * 1.2) {
+                            highlightTween.increasing = false;
+                        }
+                    } else {
+                        highlightTween.scale -= 0.01;
+                        if (highlightTween.scale <= originalScale) {
+                            highlightTween.scale = originalScale;
+                            highlightTween.increasing = true;
+                        }
+                    }
+                    
+                    symbolSprite.scale.set(highlightTween.scale);
+                }, 50);
+                
+                // Stop the highlight effect after 2 seconds
+                setTimeout(() => {
+                    clearInterval(highlightInterval);
+                    symbolSprite.scale.set(originalScale);
+                }, 2000);
+            }
+        });
+    }
+
+    // Updated win message to show total winnings
+    function showWinMessage(winnings) {
+        updateWinnings(winnings)
+        
+        const message = new PIXI.Text(`🎉 You won ${winnings}!`, {
+            fontFamily: 'Arial',
+            fontSize: Math.min(24, app.screen.width / 20),
+            fill: '#FFD700',
+            align: 'center',
+            stroke: '#000000',
+            strokeThickness: 4
+        });
+        message.anchor.set(0.5);
+        message.x = app.screen.width / 2;
+        message.y = app.screen.height / 2;
+        app.stage.addChild(message);
+        setTimeout(() => app.stage.removeChild(message), 2000);
+    }
+
+    // Button event listeners
+    spinButton.addEventListener('click', spin);
+
+    // Stake button and overlay
+    stakeButton.addEventListener('click', () => {
+        stakeOverlay.style.display = 'block';
+        
+        // Highlight the currently selected stake
+        const stakeOptionButtons = stakeOptions.querySelectorAll('.option-button');
+        stakeOptionButtons.forEach(button => {
+            const value = parseInt(button.dataset.value);
+            if (value === stake) {
+                button.classList.add('selected');
+            } else {
+                button.classList.remove('selected');
+            }
+        });
+    });
+
+    // Auto play button and overlay functionality
+    autoPlayButton.addEventListener('click', () => {
+        autoSpinOverlay.style.display = 'block';
+        
+        // Highlight the currently selected auto spins
+        const autoSpinOptionButtons = autoSpinOptions.querySelectorAll('.option-button');
+        autoSpinOptionButtons.forEach(button => {
+            const value = parseInt(button.dataset.value);
+            if (value === selectedAutoSpins) {
+                button.classList.add('selected');
+                // Add check icon if not already present
+                if (!button.querySelector('.check-icon')) {
+                    const checkIcon = document.createElement('span');
+                    checkIcon.className = 'check-icon';
+                    button.appendChild(checkIcon);
+                }
+            } else {
+                button.classList.remove('selected');
+                // Remove check icon if present
+                const checkIcon = button.querySelector('.check-icon');
+                if (checkIcon) {
+                    button.removeChild(checkIcon);
+                }
+            }
+        });
+    });
+
+    // Settings button and overlay functionality
+    settingsButton.addEventListener('click', () => {
+        // Store current settings temporarily in case user cancels
+        tempSoundEffectsEnabled = soundEffectsEnabled;
+        tempBackgroundMusicEnabled = backgroundMusicEnabled;
+        
+        settingsOverlay.style.display = 'block';
+        
+        // Update the display to match current settings
+        updateSoundOptionStyling(soundEffectsOption, soundEffectsIcon, soundEffectsEnabled);
+        updateSoundOptionStyling(backgroundMusicOption, backgroundMusicIcon, backgroundMusicEnabled);
+    });
+
+    // Function to update sound option styling
+    function updateSoundOptionStyling(option, icon, enabled) {
+        if (enabled) {
+            option.classList.add('selected');
+            icon.textContent = '🔊';
+        } else {
+            option.classList.remove('selected');
+            icon.textContent = '🔇';
+        }
+    }
+
+    // Toggle sound effects
+    soundEffectsOption.addEventListener('click', () => {
+        tempSoundEffectsEnabled = !tempSoundEffectsEnabled;
+        updateSoundOptionStyling(soundEffectsOption, soundEffectsIcon, tempSoundEffectsEnabled);
+    });
+
+    // Toggle background music
+    backgroundMusicOption.addEventListener('click', () => {
+        tempBackgroundMusicEnabled = !tempBackgroundMusicEnabled;
+        updateSoundOptionStyling(backgroundMusicOption, backgroundMusicIcon, tempBackgroundMusicEnabled);
+    });
+
+    // Cancel settings
+    cancelSettingsButton.addEventListener('click', () => {
+        settingsOverlay.style.display = 'none';
+        // Revert to previous settings (don't apply changes)
+    });
+
+    // Confirm settings
+    confirmSettingsButton.addEventListener('click', () => {
+        // Apply the temporary settings
+        soundEffectsEnabled = tempSoundEffectsEnabled;
+        backgroundMusicEnabled = tempBackgroundMusicEnabled;
+        
+        // Update background music based on new setting
+        if (backgroundMusicEnabled) {
+            backgroundMusic.play().catch(e => console.log("Audio play failed:", e));
+        } else {
+            backgroundMusic.pause();
+        }
+        
+        settingsOverlay.style.display = 'none';
+    });
+
+    // Handle stake option selection
+    stakeOptions.addEventListener('click', (e) => {
+        if (e.target.classList.contains('option-button')) {
+            // Remove selected class from all options
+            const options = stakeOptions.querySelectorAll('.option-button');
+            options.forEach(option => option.classList.remove('selected'));
+            
+            // Add selected class to clicked option
+            e.target.classList.add('selected');
+            
+            // Update selected stake value
+            selectedStake = parseInt(e.target.dataset.value);
+        }
+    });
+
+    // Handle auto spin option selection
+    autoSpinOptions.addEventListener('click', (e) => {
+        if (e.target.classList.contains('option-button')) {
+            // Remove selected class and check icons from all options
+            const options = autoSpinOptions.querySelectorAll('.option-button');
+            options.forEach(option => {
+                option.classList.remove('selected');
+                const checkIcon = option.querySelector('.check-icon');
+                if (checkIcon) {
+                    option.removeChild(checkIcon);
+                }
+            });
+            
+            // Add selected class to clicked option
+            e.target.classList.add('selected');
+            
+            // Add check icon to selected option
+            if (!e.target.querySelector('.check-icon')) {
+                const checkIcon = document.createElement('span');
+                checkIcon.className = 'check-icon';
+                e.target.appendChild(checkIcon);
+            }
+            
+            // Update selected auto spins value
+            selectedAutoSpins = parseInt(e.target.dataset.value);
+        }
+    });
+
+    // Cancel stake selection
+    cancelStakeButton.addEventListener('click', () => {
+        stakeOverlay.style.display = 'none';
+        // Don't update the stake value
+    });
+
+    // Confirm stake selection
+    confirmStakeButton.addEventListener('click', () => {
+        stake = selectedStake;
+        currentStakeElement.textContent = stake;
+        stakeOverlay.style.display = 'none';
+    });
+
+    // Cancel auto spin selection
+    cancelAutoSpinButton.addEventListener('click', () => {
+        autoSpinOverlay.style.display = 'none';
+        // Don't update the auto spins value
+    });
+
+    // Confirm auto spin selection and start auto play
+    confirmAutoSpinButton.addEventListener('click', () => {
+        if (selectedAutoSpins > 0) {
+            autoSpins = selectedAutoSpins;
+            autoSpinOverlay.style.display = 'none';
+            spin();
+        }
+    });
+
+    // Responsive scaling
+    function resizeGame() {
+        // Update canvas size
+        app.renderer.resize(gameContainer.clientWidth, gameContainer.clientHeight);
+        resizeBackground();
+        
+        // Recreate reels with new dimensions
+        createReels();
+    }
+
+    // Handle resize events
+    window.addEventListener('resize', debounce(resizeGame, 250));
+    
+    // Debounce function to prevent excessive resize calculations
+    function debounce(func, wait) {
+        let timeout;
+        return function() {
+            const context = this;
+            const args = arguments;
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(context, args), wait);
+        };
+    }
+
+    // Prevent scrolling on iOS when touching game elements
+    document.addEventListener('touchmove', function(e) {
+        if (e.target.closest('#game-container')) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+
+    // Initialize
+    createReels();
+    
+    // Handle orientation change specifically
+    window.addEventListener('orientationchange', function() {
+        setTimeout(resizeGame, 300); // Delay to allow orientation to complete
+    });
+    </script>
+</body>
+</html>
